@@ -36,24 +36,26 @@ enum
   RISCV_A1_REGNUM = 11,		/* Second argument.  */
   RISCV_PC_REGNUM = 32,		/* Program Counter.  */
 
+  RISCV_RV32E_LAST_REGNUM = 15,
   RISCV_NUM_INTEGER_REGS = 32,
 
-  RISCV_FIRST_FP_REGNUM = 33,	/* First Floating Point Register */
-  RISCV_FA0_REGNUM = 43,
+  RISCV_FIRST_GP_REGNUM = RISCV_ZERO_REGNUM,		/* First GP Register */
+  RISCV_LAST_GP_REGNUM = RISCV_FIRST_GP_REGNUM + 31,	/* Last GP Register */
+  RISCV_FIRST_FP_REGNUM = RISCV_NUM_INTEGER_REGS + 1,	/* First FPU Register */
+  RISCV_LAST_FP_REGNUM = RISCV_FIRST_FP_REGNUM + 31,	/* Last FPU Register */
+  RISCV_FIRST_CSR_REGNUM = RISCV_LAST_FP_REGNUM + 1,	/* First CSR Register */
+  RISCV_FA0_REGNUM = RISCV_FIRST_FP_REGNUM + 10,
   RISCV_FA1_REGNUM = RISCV_FA0_REGNUM + 1,
-  RISCV_LAST_FP_REGNUM = 64,	/* Last Floating Point Register */
 
-  RISCV_FIRST_CSR_REGNUM = 65,  /* First CSR */
 #define DECLARE_CSR(name, num) \
   RISCV_ ## num ## _REGNUM = RISCV_FIRST_CSR_REGNUM + num,
 #include "opcode/riscv-opc.h"
 #undef DECLARE_CSR
-  RISCV_LAST_CSR_REGNUM = 4160,
-  RISCV_CSR_LEGACY_MISA_REGNUM = 0xf10 + RISCV_FIRST_CSR_REGNUM,
+  RISCV_LAST_CSR_REGNUM = RISCV_FIRST_CSR_REGNUM + 4095,
 
-  RISCV_PRIV_REGNUM = 4161,
-
-  RISCV_LAST_REGNUM = RISCV_PRIV_REGNUM
+  RISCV_NUM_REGS,
+  RISCV_VIRT_PRIV_REGNUM = RISCV_NUM_REGS,
+  RISCV_VIRT_NUM_REGS,
 };
 
 /* RiscV DWARF register numbers.  */
@@ -64,6 +66,16 @@ enum
   RISCV_DWARF_REGNUM_F0 = 32,
   RISCV_DWARF_REGNUM_F31 = 63,
 };
+
+#define RISCV_PC_REGNAME "pc"
+#define RISCV_VIRT_PRIV_REGNAME "priv"
+
+#define RISCV_GDB_FEATURE_PREFIX "org.gnu.gdb.riscv."
+#define RISCV_GDB_FEATURE_CORE RISCV_GDB_FEATURE_PREFIX "core"
+#define RISCV_GDB_FEATURE_FPU  RISCV_GDB_FEATURE_PREFIX "fpu"
+#define RISCV_GDB_FEATURE_CPU  RISCV_GDB_FEATURE_PREFIX "cpu"
+#define RISCV_GDB_FEATURE_CSR  RISCV_GDB_FEATURE_PREFIX "csr"
+#define RISCV_GDB_FEATURE_VIRT RISCV_GDB_FEATURE_PREFIX "virtual"
 
 /* RISC-V specific per-architecture information.  */
 struct gdbarch_tdep
@@ -79,6 +91,8 @@ struct gdbarch_tdep
 
   /* ISA-specific data types.  */
   struct type *riscv_fpreg_d_type = nullptr;
+  struct type *riscv_fpreg_f_type = nullptr;
+  struct type *riscv_priv_type = nullptr;
 };
 
 
@@ -110,9 +124,5 @@ extern int riscv_abi_xlen (struct gdbarch *gdbarch);
    in integer registers) other possible return value are 4, 8, or 16 as
    with RISCV_ISA_FLEN.  */
 extern int riscv_abi_flen (struct gdbarch *gdbarch);
-
-/* Single step based on where the current instruction will take us.  */
-extern std::vector<CORE_ADDR> riscv_software_single_step
-  (struct regcache *regcache);
 
 #endif /* RISCV_TDEP_H */
