@@ -3065,6 +3065,145 @@ riscv_gdbarch_init (struct gdbarch_info info,
   return gdbarch;
 }
 
+/* This decodes the current instruction and determines the address of the
+   next instruction.  */
+
+static CORE_ADDR
+riscv_next_pc (struct regcache *regcache, CORE_ADDR pc)
+{
+  struct gdbarch *gdbarch = regcache->arch ();
+  struct riscv_insn insn;
+  CORE_ADDR next_pc;
+
+  insn.decode (gdbarch, pc);
+  next_pc = pc + insn.length ();
+
+  if (insn.opcode () == riscv_insn::JAL)
+    next_pc = pc + insn.imm_signed ();
+  else if (insn.opcode () == riscv_insn::JALR)
+    {
+      LONGEST source;
+      regcache->cooked_read (insn.rs1 (), &source);
+      next_pc = (source + insn.imm_signed ()) & ~(CORE_ADDR) 0x1;
+    }
+  else if (insn.opcode () == riscv_insn::BEQ)
+    {
+      LONGEST src1, src2;
+      regcache->cooked_read (insn.rs1 (), &src1);
+      regcache->cooked_read (insn.rs2 (), &src2);
+      if (src1 == src2)
+	next_pc = pc + insn.imm_signed ();
+    }
+  else if (insn.opcode () == riscv_insn::BNE)
+    {
+      LONGEST src1, src2;
+      regcache->cooked_read (insn.rs1 (), &src1);
+      regcache->cooked_read (insn.rs2 (), &src2);
+      if (src1 != src2)
+	next_pc = pc + insn.imm_signed ();
+    }
+  else if (insn.opcode () == riscv_insn::BLT)
+    {
+      LONGEST src1, src2;
+      regcache->cooked_read (insn.rs1 (), &src1);
+      regcache->cooked_read (insn.rs2 (), &src2);
+      if (src1 < src2)
+	next_pc = pc + insn.imm_signed ();
+    }
+  else if (insn.opcode () == riscv_insn::BGE)
+    {
+      LONGEST src1, src2;
+      regcache->cooked_read (insn.rs1 (), &src1);
+      regcache->cooked_read (insn.rs2 (), &src2);
+      if (src1 >= src2)
+	next_pc = pc + insn.imm_signed ();
+    }
+  else if (insn.opcode () == riscv_insn::BLTU)
+    {
+      ULONGEST src1, src2;
+      regcache->cooked_read (insn.rs1 (), &src1);
+      regcache->cooked_read (insn.rs2 (), &src2);
+      if (src1 < src2)
+	next_pc = pc + insn.imm_signed ();
+    }
+  else if (insn.opcode () == riscv_insn::BGEU)
+    {
+      ULONGEST src1, src2;
+      regcache->cooked_read (insn.rs1 (), &src1);
+      regcache->cooked_read (insn.rs2 (), &src2);
+      if (src1 >= src2)
+	next_pc = pc + insn.imm_signed ();
+    }
+
+  return next_pc;
+}
+
+/* We can't put a breakpoint in the middle of a lr/sc atomic sequence, so look
+   for the end of the sequence and put the breakpoint there.  */
+
+static bool
+riscv_next_pc_atomic_sequence (struct regcache *regcache, CORE_ADDR pc,
+			       CORE_ADDR *next_pc)
+{
+  struct gdbarch *gdbarch = regcache->arch ();
+  struct riscv_insn insn;
+  CORE_ADDR cur_step_pc = pc;
+  CORE_ADDR last_addr = 0;
+
+  /* First instruction has to be a load reserved.  */
+  insn.decode (gdbarch, cur_step_pc);
+  if (insn.opcode () != riscv_insn::LR)
+    return false;
+  cur_step_pc = cur_step_pc + insn.length ();
+
+  /* Next instruction should be branch to exit.  */
+  insn.decode (gdbarch, cur_step_pc);
+  if (insn.opcode () != riscv_insn::BNE)
+    return false;
+  last_addr = cur_step_pc + insn.imm_signed ();
+  cur_step_pc = cur_step_pc + insn.length ();
+
+  /* Next instruction should be store conditional.  */
+  insn.decode (gdbarch, cur_step_pc);
+  if (insn.opcode () != riscv_insn::SC)
+    return false;
+  cur_step_pc = cur_step_pc + insn.length ();
+
+  /* Next instruction should be branch to start.  */
+  insn.decode (gdbarch, cur_step_pc);
+  if (insn.opcode () != riscv_insn::BNE)
+    return false;
+  if (pc != (cur_step_pc + insn.imm_signed ()))
+    return false;
+  cur_step_pc = cur_step_pc + insn.length ();
+
+  /* We should now be at the end of the sequence.  */
+  if (cur_step_pc != last_addr)
+    return false;
+
+  *next_pc = cur_step_pc;
+  return true;
+}
+
+/* This is called just before we want to resume the inferior, if we want to
+   single-step it but there is no hardware or kernel single-step support.  We
+   find the target of the coming instruction and breakpoint it.  */
+
+std::vector<CORE_ADDR>
+riscv_software_single_step (struct regcache *regcache)
+{
+  CORE_ADDR pc, next_pc;
+
+  pc = regcache_read_pc (regcache);
+
+  if (riscv_next_pc_atomic_sequence (regcache, pc, &next_pc))
+    return {next_pc};
+
+  next_pc = riscv_next_pc (regcache, pc);
+
+  return {next_pc};
+}
+
 extern initialize_file_ftype _initialize_riscv_tdep; /* -Wmissing-prototypes */
 
 void
