@@ -2919,15 +2919,15 @@ riscv_gdbarch_init (struct gdbarch_info info,
 	      tdesc_numbered_register(feature_fpu,
 				      tdesc_data,
 				      RISCV_CSR_FFLAGS_REGNUM,
-				      riscv_csr_aliases[RISCV_FIRST_CSR_REGNUM - RISCV_CSR_FFLAGS_REGNUM].name);
+				      riscv_csr_aliases[RISCV_CSR_FFLAGS_REGNUM - RISCV_FIRST_CSR_REGNUM].name);
 	      tdesc_numbered_register(feature_fpu,
 				      tdesc_data,
 				      RISCV_CSR_FRM_REGNUM,
-				      riscv_csr_aliases[RISCV_FIRST_CSR_REGNUM - RISCV_CSR_FRM_REGNUM].name);
+				      riscv_csr_aliases[RISCV_CSR_FRM_REGNUM - RISCV_FIRST_CSR_REGNUM].name);
 	      tdesc_numbered_register(feature_fpu,
 				      tdesc_data,
 				      RISCV_CSR_FCSR_REGNUM,
-				      riscv_csr_aliases[RISCV_FIRST_CSR_REGNUM - RISCV_CSR_FCSR_REGNUM].name);
+				      riscv_csr_aliases[RISCV_CSR_FCSR_REGNUM - RISCV_FIRST_CSR_REGNUM].name);
 	    }
 
 	  feature_csr =
