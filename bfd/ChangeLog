@@ -1,3 +1,62 @@
+2019-08-31  Jim Wilson  <jimw@sifive.com>
+
+	PR 23825
+	* elfnn-riscv.c (riscv_elf_create_dynamic_sections): Add SEC_LOAD,
+	SEC_DATA, and SEC_HAS_CONTENTS to .tdata.dyn section.
+
+2019-08-30  Jim Wilson  <jimw@sifive.com>
+
+	* elfnn-riscv.c (riscv_elf_relocate_section): For unresolvable reloc
+	error, call bfd_set_error, set ret to FALSE, and goto out label.
+
+2019-08-28  Jim Wilson  <jimw@sifive.com>
+
+	* elfnn-riscv.c (_bfd_riscv_relax_lui): Add check to exclude abs
+	section when setting max_alignment.  Update comment.
+	(_bfd_riscv_relax_pc): Likewise.
+
+2019-08-15  Jim Wilson  <jimw@sifive.com>
+
+	* elfnn-riscv.c (perform_relocation) <R_RISCV_RVC_LUI>: If
+	RISCV_CONST_HIGH_PART (value) is zero, then convert c.lui instruction
+	to c.li instruction, and use ENCODE_RVC_IMM to set value.
+
+2019-08-01  Ilia Diachkov  <ilia.diachkov@optimitech.com>
+
+	* elfnn-riscv.c (_bfd_riscv_relax_lui): Set lui relax safety area to
+	two pages in relro presence.
+
+2019-06-24  Ilia Diachkov  <ilia.diachkov@optimitech.com>
+
+	* elfnn-riscv.c (_bfd_riscv_relax_lui): Delete early exit when
+	SEC_MERGE or SEC_CODE flags are set.
+	(_bfd_riscv_relax_section): New local symtype.  Set sym_sec and
+	symtype consistently.  Don't include sec_addr (sym_sec) in symval.
+	Add check for SEC_INFO_TYPE_MERGE and call _bfd_merged_section_offset.
+	Add sec_addr (sym_sec) after handling merge sections.
+
+2019-04-22  Jim Wilson  <jimw@sifive.com>
+
+	* elfnn-riscv.c (PRSTATUS_SIZE) [ARCH_SIZE==32]: Change from 0 to 204.
+
+2019-04-02  Jim Wilson  <jimw@sifive.com>
+
+	PR 24389
+	* elfnn-riscv.c (_bfd_riscv_elf_merge_private_bfd_data): Move read of
+	ELF header flags to after check for ELF object file.  Loop through
+	sections looking for code sections, if none, then skip ABI checks.
+
+2019-03-30  Andrew Waterman  <andrew@sifive.com>
+
+	* elfnn-riscv.c (_bfd_riscv_relax_call): Only check ARCH_SIZE for
+	rd == X_RA case.
+
+2019-03-21  Jim Wilson  <jimw@sifive.com>
+
+	PR 24365
+	* elfnn-riscv.c (riscv_elf_relocate_section): For STT_SECTION check,
+	verify sym non-NULL before using.  Add identical check using h.
+
 2019-02-02  Nick Clifton  <nickc@redhat.com>
 
 	2.32 Release

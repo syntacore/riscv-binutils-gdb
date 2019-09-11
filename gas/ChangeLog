@@ -1,3 +1,39 @@
+2019-07-30  Mel Chen <mel.chen@sifive.com>
+
+	* testsuite/gas/riscv/alias-csr.s: Add testcase for CSR-access
+	alias instructions.
+	* testsuite/gas/riscv/no-aliases-csr.d: Run testcase alias-csr.s with
+	-Mno-aliases.
+
+	* testsuite/gas/riscv/alias-csr.d: Run testcase alias-csr.s.
+	* testsuite/gas/riscv/priv-reg.d: Update.
+
+2019-07-05  Kito Cheng <kito.cheng@sifive.com>
+
+	* doc/c-riscv.texi (Instruction Formats): Add r4 type.
+	* testsuite/gas/riscv/insn.d: Add testcase for r4 type.
+	* testsuite/gas/riscv/insn.s: Ditto.
+
+	* doc/c-riscv.texi (Instruction Formats): Add b and j type.
+	* testsuite/gas/riscv/insn.d: Add test case for b and j type.
+	* testsuite/gas/riscv/insn.s: Ditto.
+
+	* testsuite/gas/riscv/insn.s: Correct instruction type for load
+	and store.
+
+	* testsuite/gas/riscv/insn.d: Using regular expression to match
+	address.
+
+	* doc/c-riscv.texi (Instruction Formats): Fix encoding table for SB
+	type and fix typo.
+
+2019-05-30  Jim Wilson  <jimw@sifive.com>
+
+	* config/tc-riscv.c (riscv_ip) <'u'>: Move O_constant check inside if
+	statement.  Delete O_symbol and O_constant check after if statement.
+	* testsuite/gas/riscv/auipc-parsing.s: Test lui with missing %hi.
+	* testsuite/gas/riscv/auipc-parsing.l: Update.
+
 2019-02-02  Nick Clifton  <nickc@redhat.com>
 
 	2.32 Release

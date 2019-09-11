@@ -1,3 +1,26 @@
+2019-07-30  Mel Chen <mel.chen@sifive.com>
+
+	* riscv-opc.c (riscv_opcodes): Set frsr, fssr, frcsr, fscsr, frrm,
+	fsrm, fsrmi, frflags, fsflags, fsflagsi to alias instructions.
+
+	* riscv-opc.c (riscv_opcodes): Adjust order of frsr, frcsr, fssr,
+	fscsr.
+
+2019-07-05  Kito Cheng <kito.cheng@sifive.com>
+
+	* riscv-opc.c (riscv_insn_types): Add r4 type.
+
+	* riscv-opc.c (riscv_insn_types): Add b and j type.
+
+	* opcodes/riscv-opc.c (riscv_insn_types): Remove incorrect
+	format for sb type and correct s type.
+
+2019-06-26  Jim Wilson  <jimw@sifive.com>
+
+	PR binutils/24739
+	* riscv-dis.c (riscv_disasemble_insn): Set info->endian_code.
+	Set info->display_endian to info->endian_code.
+
 2019-02-02  Nick Clifton  <nickc@redhat.com>
 
 	2.32 Release
