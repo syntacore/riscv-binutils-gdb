@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!-- 
+  Copyright (C) 2017-2020 Syntacore
+-->
+
+<!DOCTYPE target SYSTEM "gdb-target.dtd">
+<target>
+  <architecture>riscv:rv64</architecture>
+  <osabi>GNU/Linux</osabi>
+  <xi:include href="64bit-cpu.xml"/>
+  <xi:include href="64bit-fpu.xml"/>
+</target>

@@ -69,11 +69,11 @@ riscv_create_target_description (struct riscv_gdbarch_features features)
   else if (features.xlen == 16)
     arch_name.append (":rv128i");
 
-  if (features.flen == 4)
+  if (features.flen >= 4)
     arch_name.append ("f");
-  else if (features.flen == 8)
+  if (features.flen >= 8)
     arch_name.append ("d");
-  else if (features.flen == 16)
+  if (features.flen == 16)
     arch_name.append ("q");
 
   set_tdesc_architecture (tdesc, arch_name.c_str ());

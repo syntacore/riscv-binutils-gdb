@@ -117,74 +117,138 @@ struct register_alias
 
 static const struct register_alias riscv_xreg_aliases[] =
   {
+    { "x0", 0 },
     { "zero", 0 },
+    { "x1", 1 },
     { "ra", 1 },
+    { "x2", 2 },
     { "sp", 2 },
+    { "x3", 3 },
     { "gp", 3 },
+    { "x4", 4 },
     { "tp", 4 },
+    { "x5", 5 },
     { "t0", 5 },
+    { "x6", 6 },
     { "t1", 6 },
+    { "x7", 7 },
     { "t2", 7 },
+    { "x8", 8 },
     { "fp", 8 },
     { "s0", 8 },
+    { "x9", 9 },
     { "s1", 9 },
+    { "x10", 10 },
     { "a0", 10 },
+    { "x11", 11 },
     { "a1", 11 },
+    { "x12", 12 },
     { "a2", 12 },
+    { "x13", 13 },
     { "a3", 13 },
+    { "x14", 14 },
     { "a4", 14 },
+    { "x15", 15 },
     { "a5", 15 },
+    { "x16", 16 },
     { "a6", 16 },
+    { "x17", 17 },
     { "a7", 17 },
+    { "x18", 18 },
     { "s2", 18 },
+    { "x19", 19 },
     { "s3", 19 },
+    { "x20", 20 },
     { "s4", 20 },
+    { "x21", 21 },
     { "s5", 21 },
+    { "x22", 22 },
     { "s6", 22 },
+    { "x23", 23 },
     { "s7", 23 },
+    { "x24", 24 },
     { "s8", 24 },
+    { "x25", 25 },
     { "s9", 25 },
+    { "x26", 26 },
     { "s10", 26 },
+    { "x27", 27 },
     { "s11", 27 },
+    { "x28", 28 },
     { "t3", 28 },
+    { "x29", 29 },
     { "t4", 29 },
+    { "x30", 30 },
     { "t5", 30 },
+    { "x31", 31 },
     { "t6", 31 },
   };
 
 static const struct register_alias riscv_freg_aliases[] =
   {
+    { "f0", 33 },
     { "ft0", 33 },
+    { "f1", 34 },
     { "ft1", 34 },
+    { "f2", 35 },
     { "ft2", 35 },
+    { "f3", 36 },
     { "ft3", 36 },
+    { "f4", 37 },
     { "ft4", 37 },
+    { "f5", 38 },
     { "ft5", 38 },
+    { "f6", 39 },
     { "ft6", 39 },
+    { "f7", 40 },
     { "ft7", 40 },
+    { "f8", 41 },
     { "fs0", 41 },
+    { "f9", 42 },
     { "fs1", 42 },
+    { "f10", 43 },
     { "fa0", 43 },
+    { "f11", 44 },
     { "fa1", 44 },
+    { "f12", 45 },
     { "fa2", 45 },
+    { "f13", 46 },
     { "fa3", 46 },
+    { "f14", 47 },
     { "fa4", 47 },
+    { "f15", 48 },
     { "fa5", 48 },
+    { "f16", 49 },
     { "fa6", 49 },
+    { "f17", 50 },
     { "fa7", 50 },
+    { "f18", 51 },
     { "fs2", 51 },
+    { "f19", 52 },
     { "fs3", 52 },
+    { "f20", 53 },
     { "fs4", 53 },
+    { "f21", 54 },
     { "fs5", 54 },
+    { "f22", 55 },
     { "fs6", 55 },
+    { "f23", 56 },
     { "fs7", 56 },
+    { "f24", 57 },
     { "fs8", 57 },
+    { "f25", 58 },
     { "fs9", 58 },
+    { "f26", 59 },
     { "fs10", 59 },
+    { "f27", 60 },
     { "fs11", 60 },
+    { "f28", 61 },
     { "ft8", 61 },
+    { "f29", 62 },
     { "ft9", 62 },
+    { "f30", 63 },
     { "ft10", 63 },
+    { "f31", 64 },
     { "ft11", 64 },
   };
 
@@ -2885,20 +2949,17 @@ riscv_gdbarch_init (struct gdbarch_info info,
 	  if (feature_fpu == NULL)
 	    feature_fpu = feature_cpu;
 
-	  // get isa_features.flen
-	  if (tdesc_unnumbered_register (feature_fpu, "f0"))
+	  isa_features.flen = 0;
+	  /* search in FPU reg aliases  */
+	  for (int i = 0; i < ARRAY_SIZE (riscv_freg_aliases); ++i)
 	    {
-	      isa_features.flen =
-		tdesc_register_bitsize (feature_fpu, "f0") / TARGET_CHAR_BIT;
-	    }
-	  else if (tdesc_unnumbered_register (feature_fpu, riscv_freg_aliases[0].name))
-	    {
-	      isa_features.flen =
-		tdesc_register_bitsize (feature_fpu, riscv_freg_aliases[0].name) / TARGET_CHAR_BIT;
-	    }
-	  else
-	    {
-	      isa_features.flen = 0;
+	      const char *regname = riscv_freg_aliases[i].name;
+	      if (tdesc_unnumbered_register (feature_fpu, regname))
+		{
+		  isa_features.flen =
+		    tdesc_register_bitsize (feature_fpu, regname) / TARGET_CHAR_BIT;
+		  break;
+		}
 	    }
 
 	  if (isa_features.flen)

@@ -66,6 +66,8 @@ WHICH = aarch64 \
 	microblaze-with-stack-protect \
 	mips64-linux mips64-dsp-linux \
 	nios2-linux \
+	riscv/rv32-linux \
+	riscv/rv64-linux \
 	rs6000/powerpc-32 \
 	rs6000/powerpc-32l rs6000/powerpc-altivec32l rs6000/powerpc-e500l \
 	rs6000/powerpc-64l rs6000/powerpc-altivec64l rs6000/powerpc-vsx32l \
@@ -100,6 +102,8 @@ microblaze-expedite = r1,rpc
 nios2-linux-expedite = sp,pc
 or1k-expedite = r1,npc
 powerpc-expedite = r1,pc
+rv32-expedite = x2,pc
+rv64-expedite = x2,pc
 rs6000/powerpc-cell32l-expedite = r1,pc,r0,orig_r3,r4
 rs6000/powerpc-cell64l-expedite = r1,pc,r0,orig_r3,r4
 s390-linux32-expedite = r14,r15,pswa
