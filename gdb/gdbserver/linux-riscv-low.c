@@ -36,7 +36,7 @@
 #include "../features/riscv/64bit-cpu.c"
 #include "../features/riscv/64bit-fpu.c"
 
-#define RISCV_DBG
+/* #define RISCV_DBG */
 
 #ifdef RISCV_DBG
 #define DBG_PRINT warning
