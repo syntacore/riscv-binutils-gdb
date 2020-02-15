@@ -141,7 +141,7 @@ riscv_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 {
   linux_init_abi (info, gdbarch);
 
-  set_gdbarch_software_single_step (gdbarch, riscv_software_single_step);
+  /* set_gdbarch_software_single_step (gdbarch, riscv_software_single_step); */
 
   set_solib_svr4_fetch_link_map_offsets (gdbarch,
 					 (riscv_isa_xlen (gdbarch) == 4

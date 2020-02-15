@@ -1,6 +1,7 @@
 /* GNU/Linux/RISC-V specific low level interface, GDBserver.
 
-   Copyright (C) 2012-2017 Free Software Foundation, Inc.
+   Copyright (C) 2012-2019 Free Software Foundation, Inc.
+   Copyright (C) 2017-2020 Syntacore
 
    This file is part of GDB.
 
@@ -43,13 +44,6 @@
 #define DBG_PRINT(fmt, ...) do {} while (0)
 #endif
 
-/* Defined in auto-generated files riscv/rv32-linux.c, riscv/rv64-linux.c */
-void init_registers_rv32_linux (void);
-void init_registers_rv64_linux (void);
-extern const struct target_desc *tdesc_rv32_linux;
-extern const struct target_desc *tdesc_rv64_linux;
-
-/* typedef struct user_regs_struct riscv_gp_regs_struct; */
 typedef struct __riscv_d_ext_state riscv_fp_regs_struct;
 
 #define RISCV_X0_REG 0 /* constant zero register */
@@ -143,8 +137,6 @@ riscv_breakpoint_at(CORE_ADDR where)
   if (insn[0] == c_ebreak[0] && insn[1] == c_ebreak[1])
     return 1;
 
-  /* If necessary, recognize more trap instructions here.  GDB only uses the
-     one.  */
   return 0;
 }
 
@@ -165,11 +157,11 @@ riscv_fill_gregset(struct regcache *regcache, void *buf)
       collect_register_by_name (regcache, "pc", (int32_t*)buf);
 
       for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %08"PRIx32" [x%02d] %08"PRIx32" [x%02d] %08"PRIx32" [x%02d] %08"PRIx32,
+	DBG_PRINT("[x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32,
 		  i, ((int32_t*)buf)[i], i + 1, ((int32_t*)buf)[i + 1],
 		  i + 2, ((int32_t*)buf)[i + 2], i + 3, ((int32_t*)buf)[i + 3]);
       }
-      DBG_PRINT("riscv_fill_gregset: PC %08"PRIx32, *(int32_t*)buf);
+      DBG_PRINT("riscv_fill_gregset: PC %08" PRIx32, *(int32_t*)buf);
     }
   else
     {
@@ -179,11 +171,11 @@ riscv_fill_gregset(struct regcache *regcache, void *buf)
       collect_register_by_name (regcache, "pc", (int64_t*)buf);
 
       for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %016"PRIx64" [x%02d] %016"PRIx64" [x%02d] %016"PRIx64" [x%02d] %016"PRIx64,
+	DBG_PRINT("[x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64,
 		  i, ((int64_t*)buf)[i], i + 1, ((int64_t*)buf)[i + 1],
 		  i + 2, ((int64_t*)buf)[i + 2], i + 3, ((int64_t*)buf)[i + 3]);
       }
-      DBG_PRINT("riscv_fill_gregset: PC %016"PRIx64, *(int64_t*)buf);
+      DBG_PRINT("riscv_fill_gregset: PC %016" PRIx64, *(int64_t*)buf);
     }
 }
 
@@ -199,11 +191,11 @@ riscv_store_gregset(struct regcache *regcache, const void *buf)
   if (register_size (regcache->tdesc, 0) == 4)
     {
       for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %08"PRIx32" [x%02d] %08"PRIx32" [x%02d] %08"PRIx32" [x%02d] %08"PRIx32"",
+	DBG_PRINT("[x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32,
 		  i, ((int32_t*)buf)[i], i + 1, ((int32_t*)buf)[i + 1],
 		  i + 2, ((int32_t*)buf)[i + 2], i + 3, ((int32_t*)buf)[i + 3]);
       }
-      DBG_PRINT("riscv_store_gregset: PC %08"PRIx32, *(int32_t*)buf);
+      DBG_PRINT("riscv_store_gregset: PC %08" PRIx32, *(int32_t*)buf);
 
       supply_register_zeroed(regcache, RISCV_X0_REG);
 
@@ -216,11 +208,11 @@ riscv_store_gregset(struct regcache *regcache, const void *buf)
   else
     {
       for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %016"PRIx64" [x%02d] %016"PRIx64" [x%02d] %016"PRIx64" [x%02d] %016"PRIx64,
+	DBG_PRINT("[x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64,
 		  i, ((int64_t*)buf)[i], i + 1, ((int64_t*)buf)[i + 1],
 		  i + 2, ((int64_t*)buf)[i + 2], i + 3, ((int64_t*)buf)[i + 3]);
       }
-      DBG_PRINT("riscv_store_gregset: PC %016"PRIx64, *(int64_t*)buf);
+      DBG_PRINT("riscv_store_gregset: PC %016" PRIx64, *(int64_t*)buf);
 
       supply_register_zeroed(regcache, RISCV_X0_REG);
 
@@ -246,11 +238,11 @@ riscv_fill_fpregset(struct regcache *regcache, void *buf)
   collect_register_by_name (regcache, "fcsr", &regset->fcsr);
 
   for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-    DBG_PRINT("[f%02d] %016"PRIx64" [f%02d] %016"PRIx64" [f%02d] %016"PRIx64" [f%02d] %016"PRIx64,
-	      i, regset->f[i], i + 1, regset->f[i + 1],
-	      i + 2, regset->f[i + 2], i + 3, regset->f[i + 3]);
+    DBG_PRINT("[f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64,
+	      i, (uint64_t)regset->f[i], i + 1, (uint64_t)regset->f[i + 1],
+	      i + 2, (uint64_t)regset->f[i + 2], i + 3, (uint64_t)regset->f[i + 3]);
   }
-  DBG_PRINT("riscv_fill_fpregset: FCSR %08"PRIx32, (int32_t)regset->fcsr);
+  DBG_PRINT("riscv_fill_fpregset: FCSR %08" PRIx32, (int32_t)regset->fcsr);
 }
 
 static void
@@ -262,11 +254,11 @@ riscv_store_fpregset(struct regcache *regcache, const void *buf)
   DBG_PRINT("riscv_store_fpregset:");
 
   for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-    DBG_PRINT("[f%02d] %016"PRIx64" [f%02d] %016"PRIx64" [f%02d] %016"PRIx64" [f%02d] %016"PRIx64,
-	      i, regset->f[i], i + 1, regset->f[i + 1],
-	      i + 2, regset->f[i + 2], i + 3, regset->f[i + 3]);
+    DBG_PRINT("[f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64,
+	      i, (uint64_t)regset->f[i], i + 1, (uint64_t)regset->f[i + 1],
+	      i + 2, (uint64_t)regset->f[i + 2], i + 3, (uint64_t)regset->f[i + 3]);
   }
-  DBG_PRINT("riscv_store_fpregset: FCSR %08"PRIx32, (int32_t)regset->fcsr);
+  DBG_PRINT("riscv_store_fpregset: FCSR %08" PRIx32, (int32_t)regset->fcsr);
 
   for (i = 0; i < RISCV_F_REGS_NUM; ++i)
     supply_register (regcache, RISCV_F0_REG + i, &regset->f[i]);
@@ -298,7 +290,7 @@ riscv_set_pc (struct regcache *regcache, CORE_ADDR pc)
 static struct regset_info rv64_regsets[] =
 {
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRSTATUS,
-    /*sizeof(riscv_gp_regs_struct)*/32 * 8 + 8, GENERAL_REGS,
+    32 * 8 + 8, GENERAL_REGS,
     riscv_fill_gregset, riscv_store_gregset },
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRFPREG,
     sizeof(riscv_fp_regs_struct), FP_REGS,
@@ -324,7 +316,7 @@ static struct regs_info rv64_regs_info =
 static struct regset_info rv32_regsets[] =
 {
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRSTATUS,
-    /*sizeof(riscv_gp_regs_struct)*/32 * 4 + 4, GENERAL_REGS,
+    32 * 4 + 4, GENERAL_REGS,
     riscv_fill_gregset, riscv_store_gregset },
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRFPREG,
     sizeof(riscv_fp_regs_struct), FP_REGS,
@@ -375,11 +367,11 @@ riscv_arch_setup (void)
 
   static const char *expedite_riscv_regs[] = { "sp", "pc", NULL };
 
-  /* All possible riscv target descriptors  */
+  /* All possible RISC-V Linux target descriptors  */
   /* TODO: RV128 support */
-  struct target_desc *tdesc_rv32_linux = NULL;
+  static struct target_desc *tdesc_rv32_linux = NULL;
 #if __riscv_xlen > 32
-  struct target_desc *tdesc_rv64_linux = NULL;
+  static struct target_desc *tdesc_rv64_linux = NULL;
 #endif
 
   tid = lwpid_of (current_thread);
@@ -396,6 +388,7 @@ riscv_arch_setup (void)
           tdesc_rv64_linux = allocate_target_description ();
 #ifndef IN_PROCESS_AGENT
           set_tdesc_architecture (tdesc_rv64_linux, "riscv:rv64");
+          set_tdesc_osabi (tdesc_rv64_linux, "GNU/Linux");
 #endif
           long regnum = 0;
           regnum = create_feature_riscv_64bit_cpu (tdesc_rv64_linux, regnum);
@@ -412,6 +405,7 @@ riscv_arch_setup (void)
           tdesc_rv32_linux = allocate_target_description ();
 #ifndef IN_PROCESS_AGENT
           set_tdesc_architecture (tdesc_rv32_linux, "riscv:rv32");
+          set_tdesc_osabi (tdesc_rv32_linux, "GNU/Linux");
 #endif
           long regnum = 0;
           regnum = create_feature_riscv_32bit_cpu (tdesc_rv32_linux, regnum);

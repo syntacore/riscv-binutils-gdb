@@ -3,7 +3,7 @@
 name:rv32_linux
 feature:1
 xmltarget:rv32-linux.xml
-expedite:x2,pc
+expedite:sp,pc
 32:zero
 32:ra
 32:sp

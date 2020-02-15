@@ -3,7 +3,7 @@
 name:rv64_linux
 feature:1
 xmltarget:rv64-linux.xml
-expedite:x2,pc
+expedite:sp,pc
 64:zero
 64:ra
 64:sp
