@@ -1,5 +1,6 @@
 /* Target-dependent code for GNU/Linux on RISC-V processors.
    Copyright (C) 2018-2019 Free Software Foundation, Inc.
+   Copyright (C) 2020 Syntacore
 
    This file is part of GDB.
 
@@ -30,18 +31,44 @@
    gdb puts it at offset 32.  Register x0 is always 0 and can be ignored.
    Registers x1 to x31 are in the same place.  */
 
-static const struct regcache_map_entry riscv_linux_gregmap[] =
+static const struct regcache_map_entry rv32_linux_gregmap[] =
+  {
+    { 1,  RISCV_PC_REGNUM, 4 }, /* pc */
+    { 31, RISCV_RA_REGNUM, 4 }, /* x1 to x31 */
+    { 0 }
+  };
+
+static const struct regcache_map_entry rv64_linux_gregmap[] =
+  {
+    { 1,  RISCV_PC_REGNUM, 8 }, /* pc */
+    { 31, RISCV_RA_REGNUM, 8 }, /* x1 to x31 */
+    { 0 }
+  };
+
+/* FPU registers map.  */
+
+static const struct regcache_map_entry riscv_linux_fp64regmap[] =
+  {
+    { 32, RISCV_FIRST_FP_REGNUM, 8 }, /* f0 ... f31 */
+    { 1,  RISCV_CSR_FCSR_REGNUM, 4 }, /* FCSR */
+    { 0 }
+  };
+
+/* Register set definitions.  */
+
+static const struct regset rv32_linux_gregset =
 {
-  { 1,  RISCV_PC_REGNUM, 0 },
-  { 31, RISCV_RA_REGNUM, 0 }, /* x1 to x31 */
-  { 0 }
+  rv32_linux_gregmap, regcache_supply_regset, regcache_collect_regset
 };
 
-/* Define the general register regset.  */
-
-static const struct regset riscv_linux_gregset =
+static const struct regset rv64_linux_gregset =
 {
-  riscv_linux_gregmap, regcache_supply_regset, regcache_collect_regset
+  rv64_linux_gregmap, regcache_supply_regset, regcache_collect_regset
+};
+
+static const struct regset riscv_linux_fp64regset =
+{
+  riscv_linux_fp64regmap, regcache_supply_regset, regcache_collect_regset
 };
 
 /* Define hook for core file support.  */
@@ -52,10 +79,15 @@ riscv_linux_iterate_over_regset_sections (struct gdbarch *gdbarch,
                                           void *cb_data,
                                           const struct regcache *regcache)
 {
-  cb (".reg", (32 * riscv_isa_xlen (gdbarch)), (32 * riscv_isa_xlen (gdbarch)),
-      &riscv_linux_gregset, NULL, cb_data);
+  if (riscv_isa_xlen (gdbarch) == 4)
+    cb (".reg", (32 * 8), (32 * 8),
+        &rv32_linux_gregset, NULL, cb_data);
+  else
+    cb (".reg", (32 * 8), (32 * 8),
+        &rv64_linux_gregset, NULL, cb_data);
 
-  /* TODO: Add FP register support.  */
+  cb (".reg2", (32 * 8 + 4), (32 * 8 + 4),
+      &riscv_linux_fp64regset, NULL, cb_data);
 }
 
 /* Signal trampoline support.  */
@@ -140,8 +172,6 @@ static void
 riscv_linux_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
 {
   linux_init_abi (info, gdbarch);
-
-  /* set_gdbarch_software_single_step (gdbarch, riscv_software_single_step); */
 
   set_solib_svr4_fetch_link_map_offsets (gdbarch,
 					 (riscv_isa_xlen (gdbarch) == 4

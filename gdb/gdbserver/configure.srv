@@ -291,7 +291,6 @@ case "${target}" in
 			;;
   riscv*-*-linux*)	srv_regobj=""
 			srv_tgtobj="$srv_linux_obj linux-riscv-low.o"
-			srv_xmlfiles="riscv/rv64-linux.xml riscv/rv32-linux.xml"
 			srv_xmlfiles="${srv_xmlfiles} riscv/32bit-cpu.xml"
 			srv_xmlfiles="${srv_xmlfiles} riscv/64bit-cpu.xml"
 			srv_xmlfiles="${srv_xmlfiles} riscv/64bit-fpu.xml"

@@ -24,6 +24,7 @@
 #include "elf/common.h"
 #include "opcode/riscv.h"
 #include "tdesc.h"
+#include "debug.h"
 
 #include <linux/ptrace.h>
 #include <linux/elf.h>
@@ -35,14 +36,6 @@
 #include "../features/riscv/32bit-cpu.c"
 #include "../features/riscv/64bit-cpu.c"
 #include "../features/riscv/64bit-fpu.c"
-
-/* #define RISCV_DBG */
-
-#ifdef RISCV_DBG
-#define DBG_PRINT warning
-#else
-#define DBG_PRINT(fmt, ...) do {} while (0)
-#endif
 
 typedef struct __riscv_d_ext_state riscv_fp_regs_struct;
 
@@ -147,7 +140,8 @@ riscv_fill_gregset(struct regcache *regcache, void *buf)
 {
   int i;
 
-  DBG_PRINT("riscv_fill_gregset:");
+  if (debug_threads)
+    debug_printf ("RISCV fill gregset:\n");
 
   if (register_size (regcache->tdesc, 0) == 4)
     {
@@ -156,12 +150,18 @@ riscv_fill_gregset(struct regcache *regcache, void *buf)
       }
       collect_register_by_name (regcache, "pc", (int32_t*)buf);
 
-      for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32,
-		  i, ((int32_t*)buf)[i], i + 1, ((int32_t*)buf)[i + 1],
-		  i + 2, ((int32_t*)buf)[i + 2], i + 3, ((int32_t*)buf)[i + 3]);
+      if (debug_threads)
+	{
+	  for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
+	    debug_printf ("[x%02d] %08" PRIx32 " [x%02d] %08" PRIx32
+			  " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 "\n",
+			  i, ((int32_t*)buf)[i],
+			  i + 1, ((int32_t*)buf)[i + 1],
+			  i + 2, ((int32_t*)buf)[i + 2],
+			  i + 3, ((int32_t*)buf)[i + 3]);
+	  }
+	  debug_printf ("RISCV fill PC: %08" PRIx32 "\n", *(int32_t*)buf);
       }
-      DBG_PRINT("riscv_fill_gregset: PC %08" PRIx32, *(int32_t*)buf);
     }
   else
     {
@@ -170,12 +170,18 @@ riscv_fill_gregset(struct regcache *regcache, void *buf)
       }
       collect_register_by_name (regcache, "pc", (int64_t*)buf);
 
-      for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64,
-		  i, ((int64_t*)buf)[i], i + 1, ((int64_t*)buf)[i + 1],
-		  i + 2, ((int64_t*)buf)[i + 2], i + 3, ((int64_t*)buf)[i + 3]);
-      }
-      DBG_PRINT("riscv_fill_gregset: PC %016" PRIx64, *(int64_t*)buf);
+      if (debug_threads)
+	{
+	  for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
+	    debug_printf ("[x%02d] %016" PRIx64 " [x%02d] %016" PRIx64
+			  " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 "\n",
+			  i, ((int64_t*)buf)[i],
+			  i + 1, ((int64_t*)buf)[i + 1],
+			  i + 2, ((int64_t*)buf)[i + 2],
+			  i + 3, ((int64_t*)buf)[i + 3]);
+	  }
+	  debug_printf ("RISCV fill PC: %016" PRIx64 "\n", *(int64_t*)buf);
+	}
     }
 }
 
@@ -186,16 +192,23 @@ riscv_store_gregset(struct regcache *regcache, const void *buf)
 {
   int i;
 
-  DBG_PRINT("riscv_store_gregset:");
+  if (debug_threads)
+    debug_printf ("RISCV store gregset:\n");
 
   if (register_size (regcache->tdesc, 0) == 4)
     {
-      for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32,
-		  i, ((int32_t*)buf)[i], i + 1, ((int32_t*)buf)[i + 1],
-		  i + 2, ((int32_t*)buf)[i + 2], i + 3, ((int32_t*)buf)[i + 3]);
-      }
-      DBG_PRINT("riscv_store_gregset: PC %08" PRIx32, *(int32_t*)buf);
+      if (debug_threads)
+	{
+	  for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
+	    debug_printf ("[x%02d] %08" PRIx32 " [x%02d] %08" PRIx32
+			  " [x%02d] %08" PRIx32 " [x%02d] %08" PRIx32 "\n",
+			  i, ((int32_t*)buf)[i],
+			  i + 1, ((int32_t*)buf)[i + 1],
+			  i + 2, ((int32_t*)buf)[i + 2],
+			  i + 3, ((int32_t*)buf)[i + 3]);
+	  }
+	  debug_printf ("RISCV store PC: %08" PRIx32 "\n", *(int32_t*)buf);
+	}
 
       supply_register_zeroed(regcache, RISCV_X0_REG);
 
@@ -207,12 +220,18 @@ riscv_store_gregset(struct regcache *regcache, const void *buf)
     }
   else
     {
-      for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-	DBG_PRINT("[x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64,
-		  i, ((int64_t*)buf)[i], i + 1, ((int64_t*)buf)[i + 1],
-		  i + 2, ((int64_t*)buf)[i + 2], i + 3, ((int64_t*)buf)[i + 3]);
-      }
-      DBG_PRINT("riscv_store_gregset: PC %016" PRIx64, *(int64_t*)buf);
+      if (debug_threads)
+	{
+	  for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
+	    debug_printf ("[x%02d] %016" PRIx64 " [x%02d] %016" PRIx64
+			  " [x%02d] %016" PRIx64 " [x%02d] %016" PRIx64 "\n",
+			  i, ((int64_t*)buf)[i],
+			  i + 1, ((int64_t*)buf)[i + 1],
+			  i + 2, ((int64_t*)buf)[i + 2],
+			  i + 3, ((int64_t*)buf)[i + 3]);
+	  }
+	  debug_printf("RISCV store PC: %016" PRIx64 "\n", *(int64_t*)buf);
+	}
 
       supply_register_zeroed(regcache, RISCV_X0_REG);
 
@@ -230,19 +249,26 @@ riscv_fill_fpregset(struct regcache *regcache, void *buf)
   int i;
   riscv_fp_regs_struct *regset = (riscv_fp_regs_struct*)buf;
 
-  DBG_PRINT("riscv_fill_fpregset:");
+  if (debug_threads)
+    debug_printf ("RISCV fill fpregset:\n");
 
   for (i = 0; i < RISCV_F_REGS_NUM; ++i) {
     collect_register (regcache, RISCV_F0_REG + i, &regset->f[i]);
   }
   collect_register_by_name (regcache, "fcsr", &regset->fcsr);
 
-  for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-    DBG_PRINT("[f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64,
-	      i, (uint64_t)regset->f[i], i + 1, (uint64_t)regset->f[i + 1],
-	      i + 2, (uint64_t)regset->f[i + 2], i + 3, (uint64_t)regset->f[i + 3]);
-  }
-  DBG_PRINT("riscv_fill_fpregset: FCSR %08" PRIx32, (int32_t)regset->fcsr);
+  if (debug_threads)
+    {
+      for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
+	debug_printf ("[f%02d] %016" PRIx64 " [f%02d] %016" PRIx64
+		      " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 "\n",
+		      i, (uint64_t)regset->f[i],
+		      i + 1, (uint64_t)regset->f[i + 1],
+		      i + 2, (uint64_t)regset->f[i + 2],
+		      i + 3, (uint64_t)regset->f[i + 3]);
+      }
+      debug_printf ("RISCV fill FCSR: %08" PRIx32 "\n", (uint32_t)regset->fcsr);
+    }
 }
 
 static void
@@ -251,14 +277,21 @@ riscv_store_fpregset(struct regcache *regcache, const void *buf)
   int i;
   const riscv_fp_regs_struct *regset = (const riscv_fp_regs_struct*)buf;
 
-  DBG_PRINT("riscv_store_fpregset:");
+  if (debug_threads)
+    debug_printf ("RISCV store fpregset:\n");
 
-  for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
-    DBG_PRINT("[f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64,
-	      i, (uint64_t)regset->f[i], i + 1, (uint64_t)regset->f[i + 1],
-	      i + 2, (uint64_t)regset->f[i + 2], i + 3, (uint64_t)regset->f[i + 3]);
-  }
-  DBG_PRINT("riscv_store_fpregset: FCSR %08" PRIx32, (int32_t)regset->fcsr);
+  if (debug_threads)
+    {
+      for (i = 0; i < RISCV_F_REGS_NUM; i += 4) {
+	debug_printf ("[f%02d] %016" PRIx64 " [f%02d] %016" PRIx64
+		      " [f%02d] %016" PRIx64 " [f%02d] %016" PRIx64 "\n",
+		      i, (uint64_t)regset->f[i],
+		      i + 1, (uint64_t)regset->f[i + 1],
+		      i + 2, (uint64_t)regset->f[i + 2],
+		      i + 3, (uint64_t)regset->f[i + 3]);
+      }
+      debug_printf ("RISCV store FCSR: %08" PRIx32 "\n", (uint32_t)regset->fcsr);
+    }
 
   for (i = 0; i < RISCV_F_REGS_NUM; ++i)
     supply_register (regcache, RISCV_F0_REG + i, &regset->f[i]);
@@ -290,7 +323,7 @@ riscv_set_pc (struct regcache *regcache, CORE_ADDR pc)
 static struct regset_info rv64_regsets[] =
 {
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRSTATUS,
-    32 * 8 + 8, GENERAL_REGS,
+    32 * 8, GENERAL_REGS,
     riscv_fill_gregset, riscv_store_gregset },
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRFPREG,
     sizeof(riscv_fp_regs_struct), FP_REGS,
@@ -316,7 +349,7 @@ static struct regs_info rv64_regs_info =
 static struct regset_info rv32_regsets[] =
 {
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRSTATUS,
-    32 * 4 + 4, GENERAL_REGS,
+    32 * 4, GENERAL_REGS,
     riscv_fill_gregset, riscv_store_gregset },
   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRFPREG,
     sizeof(riscv_fp_regs_struct), FP_REGS,
@@ -348,9 +381,8 @@ riscv_regs_info (void)
   return &rv64_regs_info;
 }
 
-/* Implementation of linux_target_ops method "supports_tracepoints".  */
+/* TODO: Implementation of linux_target_ops method "supports_tracepoints".  */
 #if 0
-/* TODO: tracepoints support */
 static int
 riscv_supports_tracepoints (void)
 {
@@ -431,7 +463,9 @@ riscv_get_next_pcs(struct regcache *regcache)
   the_target->read_memory(pc, buf, 2);
   inst_op = (buf[0] & 0x3);
 
-  DBG_PRINT("RISCV_get_next_pcs(): pc %08lx code %04x", (unsigned long)pc, (unsigned)buf[0] + ((unsigned)buf[1] << 8));
+  if (debug_threads)
+    debug_printf ("RISCV get_next_pcs(): pc %lx instr %04x\n",
+		  (unsigned long)pc, (unsigned)buf[0] + ((unsigned)buf[1] << 8));
 
   if (inst_op == 1) { // RVC encoding #1
     int inst_func = buf[1] & 0xe0;
@@ -448,9 +482,10 @@ riscv_get_next_pcs(struct regcache *regcache)
 	((imm << (5 - 2)) & (1 << 5))
 	;
       nextpc = (CORE_ADDR)((unsigned long)pc + (long)offs);
-      DBG_PRINT("RISCV_get_next_pcs(C.%s): pc %08lx code %04x offs %ld newpc %08lx",
-		inst_func == 0xa0 ? "J" : "JAL",
-		(unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
+      if (debug_threads)
+	debug_printf ("RISCV get_next_pcs(C.%s): pc %lx instr %04x offs %ld newpc %lx\n",
+		      inst_func == 0xa0 ? "J" : "JAL",
+		      (unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
     } else if (inst_func == 0xc0 || inst_func == 0xe0) { // BEQZ || BNEZ
       const int16_t imm = (buf[1] << 8) | buf[0];
       int16_t offs =
@@ -464,9 +499,10 @@ riscv_get_next_pcs(struct regcache *regcache)
       next_pcs.push_back((CORE_ADDR)((unsigned long)pc + 2));
       // add branch TRUE
       nextpc = (CORE_ADDR)((unsigned long)pc + (long)offs);
-      DBG_PRINT("RISCV_get_next_pcs(C.%s): pc %08lx code %04x offs %ld newpc %08lx",
-		inst_func == 0xc0 ? "BEQZ" : "BNEZ",
-		(unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
+      if (debug_threads)
+	debug_printf ("RISCV get_next_pcs(C.%s): pc %lx instr %04x offs %ld newpc %lx\n",
+		      inst_func == 0xc0 ? "BEQZ" : "BNEZ",
+		      (unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
     } else { // all others
       nextpc = (CORE_ADDR)((unsigned long)pc + 2);
     }
@@ -478,7 +514,9 @@ riscv_get_next_pcs(struct regcache *regcache)
       long base = 0;
       collect_register(regcache, base_regn, &base);
       nextpc = (CORE_ADDR)(base & ~0x1);
-      DBG_PRINT("RISCV_get_next_pcs(C.J[AL]R): pc %08lx code %04x reg %d newpc %08lx", (unsigned long)pc, (unsigned)imm, base_regn, (unsigned long)nextpc);
+      if (debug_threads)
+	debug_printf ("RISCV get_next_pcs(C.J[AL]R): pc %lx instr %04x reg %d newpc %lx\n",
+		      (unsigned long)pc, (unsigned)imm, base_regn, (unsigned long)nextpc);
     } else { // all others
       nextpc = (CORE_ADDR)((unsigned long)pc + 2);
     }
@@ -500,7 +538,9 @@ riscv_get_next_pcs(struct regcache *regcache)
       next_pcs.push_back((CORE_ADDR)((unsigned long)pc + 4));
       // add branch TRUE
       nextpc = (CORE_ADDR)((unsigned long)pc + (long)offs);
-      DBG_PRINT("RISCV_get_next_pcs(BRANCH): pc %08lx code %08x offs %ld newpc %08lx", (unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
+      if (debug_threads)
+	debug_printf ("RISCV get_next_pcs(BRANCH): pc %lx instr %04x offs %ld newpc %lx\n",
+		      (unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
     } else if (inst_op2 == 0x64) { // JALR
       const int32_t imm = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
       int32_t offs = (int32_t)((buf[3] << 24) | (buf[2] << 16)) >> (31 - 11);
@@ -508,7 +548,9 @@ riscv_get_next_pcs(struct regcache *regcache)
       long base = 0;
       collect_register (regcache, base_regn, &base);
       nextpc = (CORE_ADDR)((base + offs) & ~0x1);
-      DBG_PRINT("RISCV_get_next_pcs(JALR): pc %08lx code %08x reg %d base %08lx offs %ld newpc %08lx", (unsigned long)pc, (unsigned)imm, base_regn, base, (long)offs, (unsigned long)nextpc);
+      if (debug_threads)
+	debug_printf ("RISCV get_next_pcs(JALR): pc %lx instr %08x reg %d = %lx offs %ld newpc %lx\n",
+		      (unsigned long)pc, (unsigned)imm, base_regn, base, (long)offs, (unsigned long)nextpc);
     } else if (inst_op2 == 0x6c) { // JAL
       const int32_t imm = (buf[3] << 24) | (buf[2] << 16) | (buf[1] << 8) | buf[0];
       int32_t offs =
@@ -518,7 +560,9 @@ riscv_get_next_pcs(struct regcache *regcache)
 	((imm >> (19 - 19)) & (0xff << 12))
 	;
       nextpc = (CORE_ADDR)((unsigned long)pc + (long)offs);
-      DBG_PRINT("RISCV_get_next_pcs(JAL): pc %08lx code %08x offs %ld newpc %08lx", (unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
+      if (debug_threads)
+	debug_printf ("RISCV get_next_pcs(JAL): pc %lx instr %08x offs %ld newpc %lx\n",
+		      (unsigned long)pc, (unsigned)imm, (long)offs, (unsigned long)nextpc);
     } else { // all others
       nextpc = (CORE_ADDR)((unsigned long)pc + 4);
     }

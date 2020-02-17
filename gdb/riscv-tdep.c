@@ -57,18 +57,9 @@
 #include "prologue-value.h"
 #include "arch/riscv.h"
 
-// #define RISCV_DBG
-
-#ifdef RISCV_DBG
-#define DBG_PRINT warning
-#define RISCV_DBG_DFLT 1
-#else
-#define DBG_PRINT(fmt, ...) do {} while (0)
-#define RISCV_DBG_DFLT 0
-#endif
-
 #define RISCV_SCR_CUSTOM_CSR 1
 
+#define RISCV_DBG_DFLT 0
 
 /* The stack must be 16-byte aligned.  */
 #define SP_ALIGNMENT 16
@@ -534,8 +525,6 @@ riscv_register_type (struct gdbarch *gdbarch, int regnum)
   struct type *type = tdesc_register_type (gdbarch, regnum);
   int xlen = riscv_isa_xlen (gdbarch);
 
-  // DBG_PRINT("riscv_register_type(): regnum %d", regnum);
-
   if (regnum < RISCV_FIRST_FP_REGNUM)
     {
       if (TYPE_CODE (type) == TYPE_CODE_INT && TYPE_LENGTH (type) == xlen)
@@ -640,7 +629,9 @@ riscv_register_reggroup_p (struct gdbarch  *gdbarch,
 {
   unsigned int i;
 
-  // DBG_PRINT("riscv_register_reggroup_p(): regnum %d group %s", regnum, reggroup_name(reggroup));
+  if (riscv_debug_gdbarch > 2)
+    fprintf_unfiltered (gdb_stdlog, "RISCV: register reggroup: regnum %d group \"%s\"\n",
+			regnum, reggroup_name(reggroup));
 
   /* Used by 'info registers' and 'info registers <groupname>'.  */
 
@@ -2616,51 +2607,19 @@ riscv_features_from_gdbarch_info (const struct gdbarch_info info)
       else if (e_flags & EF_RISCV_FLOAT_ABI_SINGLE)
 	features.flen = 4;
 
-      DBG_PRINT("**RISC-V** riscv_features_from_gdbarch_info: features ELF x/f: %d/%d",
-		    features.xlen, features.flen);
+      if (riscv_debug_gdbarch > 1)
+	fprintf_unfiltered (gdb_stdlog, "RISCV: features ELF x/f: %d/%d\n",
+			    features.xlen, features.flen);
     }
   else
     {
-#if 0
-      const struct bfd_arch_info *binfo = info.bfd_arch_info;
-
-      if (binfo->bits_per_word == 32)
-      	features.xlen = 4;
-      else if (binfo->bits_per_word == 64)
-      	features.xlen = 8;
-      else
-      	internal_error (__FILE__, __LINE__, _("unknown bits_per_word %d"),
-      			binfo->bits_per_word);
-#endif // 0/1
-      DBG_PRINT("**RISC-V** riscv_features_from_gdbarch_info: features binfo x/f: %d/%d",
-		    features.xlen, features.flen);
+      if (riscv_debug_gdbarch > 1)
+	fprintf_unfiltered (gdb_stdlog, "RISCV: features binfo x/f: %d/%d\n",
+			    features.xlen, features.flen);
     }
 
   return features;
 }
-
-#if 0
-/* Find a suitable default target description.  Use the contents of INFO,
-   specifically the bfd object being executed, to guide the selection of a
-   suitable default target description.  */
-
-static const struct target_desc *
-riscv_find_default_target_description (const struct gdbarch_info info)
-{
-  /* Extract desired feature set from INFO.  */
-  struct riscv_gdbarch_features features
-    = riscv_features_from_gdbarch_info (info);
-
-  /* If the XLEN field is still 0 then we got nothing useful from INFO.  In
-     this case we fall back to a minimal useful target, 8-byte x-registers,
-     with no floating point.  */
-  if (features.xlen == 0)
-    features.xlen = 8;
-
-  /* Now build a target description based on the feature set.  */
-  return riscv_create_target_description (features);
-}
-#endif // 0/1
 
 /* Implement the "dwarf2_reg_to_regnum" gdbarch method.  */
 
@@ -2676,33 +2635,41 @@ riscv_dwarf_reg_to_regnum (struct gdbarch *gdbarch, int reg)
   return -1;
 }
 
-#ifdef RISCV_DBG
+/* #ifdef RISCV_DBG */
 static void
-riscv_dump_regs (struct gdbarch *gdbarch)
+riscv_dump_gdbarch_regs (struct gdbarch *gdbarch)
 {
-  int i;
-  char buf[128];
-  int maxregs = gdbarch_num_regs (gdbarch) + gdbarch_num_pseudo_regs (gdbarch);
+  if (riscv_debug_gdbarch > 1)
+    {
+      int i;
+      char buf[128];
+      int maxregs = gdbarch_num_regs (gdbarch) + gdbarch_num_pseudo_regs (gdbarch);
 
-  warning ("riscv gdbarch regs:");
+      fprintf_unfiltered (gdb_stdlog, "RISCV: GDBarch registers:\n");
+      /* warning ("riscv gdbarch regs:"); */
 
-  for (i = 0; i < maxregs; i += 16) {
-    int cnt = 0;
-    memset (buf, ' ', sizeof(buf));
-    for (int n = i; n < maxregs && n < i + 16; ++n) {
-      const char *regname = gdbarch_register_name (gdbarch, n);
-      if (regname != NULL && regname[0] != '\0') {
-	memcpy (buf + (n - i) * 8, regname, strlen (regname));
-	++cnt;
-      }
+      for (i = 0; i < maxregs; i += 16)
+	{
+	  int cnt = 0;
+	  memset (buf, ' ', sizeof(buf));
+	  for (int n = i; n < maxregs && n < i + 16; ++n)
+	    {
+	      const char *regname = gdbarch_register_name (gdbarch, n);
+	      if (regname != NULL && regname[0] != '\0')
+		{
+		  memcpy (buf + (n - i) * 8, regname, strlen (regname));
+		  ++cnt;
+		}
+	    }
+	  if (cnt > 0) {
+	    buf[sizeof(buf) - 1] = '\0';
+	    fprintf_unfiltered (gdb_stdlog, "%04d: %s\n", i, buf);
+	    /* warning ("%04d: %s", i, buf); */
+	  }
+	}
     }
-    if (cnt > 0) {
-      buf[sizeof(buf) - 1] = '\0';
-      warning ("%04d: %s", i, buf);
-    }
-  }
 }
-#endif // RISCV_DBG
+/* #endif // RISCV_DBG */
 
 static int
 riscv_assign_isa_registers (const struct tdesc_feature *feature,
@@ -2714,8 +2681,9 @@ riscv_assign_isa_registers (const struct tdesc_feature *feature,
 {
   int valid_p = 1;
 
-  DBG_PRINT("**RISC-V** riscv_assign_isa_registers: \"%s\" %d/%d-%d",
-	    reg_prefix, regno_offset, first_reg, last_reg);
+  if (riscv_debug_gdbarch > 1)
+    fprintf_unfiltered (gdb_stdlog, "RISCV: assign ISA registers: \"%s\" %d/%d-%d\n",
+			reg_prefix, regno_offset, first_reg, last_reg);
 
   for (int i = first_reg; i <= last_reg; ++i)
     {
@@ -2726,8 +2694,11 @@ riscv_assign_isa_registers (const struct tdesc_feature *feature,
 					i,
 					buf);
       if (res)
-	DBG_PRINT("**RISC-V** riscv_assign_abi_registers: %-16s    %d",
-		  buf, i);
+	{
+	  if (riscv_debug_gdbarch > 1)
+	    fprintf_unfiltered (gdb_stdlog, "RISCV: assign ISA register: %-16s    %d\n",
+				buf, i);
+	}
       valid_p &= res;
     }
 
@@ -2743,8 +2714,9 @@ riscv_assign_abi_registers (const struct tdesc_feature *feature,
   int valid_p = 1;
   int cnt = 0;
 
-  DBG_PRINT("**RISC-V** riscv_assign_abi_registers: \"%s\" ... \"%s\" (%d)",
-	    reg_alias->name, reg_alias[num - 1].name, num);
+  if (riscv_debug_gdbarch > 1)
+    fprintf_unfiltered (gdb_stdlog, "RISCV: assign ABI registers: \"%s\" ... \"%s\" (%d)\n",
+			reg_alias->name, reg_alias[num - 1].name, num);
 
   for (; num > 0; --num, ++reg_alias)
     {
@@ -2753,13 +2725,17 @@ riscv_assign_abi_registers (const struct tdesc_feature *feature,
 					 reg_alias->regnum,
 					 reg_alias->name);
       if (res)
-	DBG_PRINT("**RISC-V** riscv_assign_abi_registers: %-16s    %d",
-		  reg_alias->name, reg_alias->regnum);
+	{
+	  if (riscv_debug_gdbarch > 1)
+	    fprintf_unfiltered (gdb_stdlog, "RISCV: assign ABI register: %-16s    %d\n",
+				reg_alias->name, reg_alias->regnum);
+	}
       cnt += res;
       valid_p &= res;
     }
 
-  DBG_PRINT("**RISC-V** riscv_assign_abi_registers: assigned %d", cnt);
+  if (riscv_debug_gdbarch > 1)
+    fprintf_unfiltered (gdb_stdlog, "RISCV: assigned ABI registers: %d\n", cnt);
 
   return valid_p;
 }
@@ -2781,8 +2757,9 @@ riscv_add_aliases (struct gdbarch *gdbarch,
 	{
 	  user_reg_add (gdbarch, reg_alias->name,
 			value_of_riscv_user_reg, &reg_alias->regnum);
-	  DBG_PRINT("**RISC-V** add alias: %-16s     %s",
-		    reg_alias->name, regname);
+	  if (riscv_debug_gdbarch > 1)
+	    fprintf_unfiltered (gdb_stdlog, "RISCV: add alias: %-16s     %s\n",
+				reg_alias->name, regname);
 	}
     }
 }
@@ -2857,8 +2834,6 @@ riscv_gdbarch_alloc(struct gdbarch_info *info, struct gdbarch_tdep *tdep)
   /* Some specific register numbers GDB likes to know about.  */
   set_gdbarch_sp_regnum (gdbarch, RISCV_SP_REGNUM);
   set_gdbarch_pc_regnum (gdbarch, RISCV_PC_REGNUM);
-  //  set_gdbarch_ps_regnum (gdbarch, RISCV_FP_REGNUM);
-  // set_gdbarch_deprecated_fp_regnum (gdbarch, RISCV_FP_REGNUM);
 
   set_gdbarch_register_name (gdbarch, tdesc_register_name);
   set_gdbarch_register_type (gdbarch, tdesc_register_type);
@@ -2889,12 +2864,9 @@ riscv_gdbarch_init (struct gdbarch_info info,
 
   struct riscv_gdbarch_features isa_features, abi_features;
 
-  DBG_PRINT("**RISC-V** riscv_gdbarch_init: tdesc_has_registers = %d",
-	    tdesc_has_registers (info.target_desc));
-#if 0
-  if (!tdesc_has_registers (info.target_desc))
-    info.target_desc = riscv_find_default_target_description (info);
-#endif // 0/1
+  if (riscv_debug_gdbarch > 1)
+    fprintf_unfiltered (gdb_stdlog, "Target description has registers: %d\n",
+                        tdesc_has_registers (info.target_desc));
 
   abi_features = riscv_features_from_gdbarch_info(info);
 
@@ -3032,15 +3004,19 @@ riscv_gdbarch_init (struct gdbarch_info info,
 	  if (info.bfd_arch_info == NULL
 	      || info.bfd_arch_info->bits_per_word != isa_features.xlen * TARGET_CHAR_BIT)
 	    {
-	      DBG_PRINT("**RISC-V** riscv_gdbarch_init: update bfd_arch_info (info %p bits %d)",
-			info.bfd_arch_info, info.bfd_arch_info ? info.bfd_arch_info->bits_per_word : 0);
+	      if (riscv_debug_gdbarch > 1)
+		fprintf_unfiltered (gdb_stdlog, "RISCV: Update bfd_arch_info (info %p bits %d)\n",
+				    info.bfd_arch_info,
+				    info.bfd_arch_info ? info.bfd_arch_info->bits_per_word : 0);
 	      info.bfd_arch_info =
 		bfd_scan_arch (isa_features.xlen == 4 ?
 			       "riscv:rv32" :  "riscv:rv64");
 	    }
 
-	  DBG_PRINT("**RISC-V** riscv_gdbarch_init: features x/f isa:%d/%d, abi:%d/%d",
-		    isa_features.xlen, isa_features.flen, abi_features.xlen, abi_features.flen);
+	  if (riscv_debug_gdbarch > 1)
+	    fprintf_unfiltered (gdb_stdlog, "RISCV: GDBarch features x/f isa:%d/%d, abi:%d/%d\n",
+				isa_features.xlen, isa_features.flen,
+				abi_features.xlen, abi_features.flen);
 
 	  /* Find a candidate among the list of pre-declared architectures.  */
 	  for (arches = gdbarch_list_lookup_by_info (arches, &info);
@@ -3059,7 +3035,8 @@ riscv_gdbarch_init (struct gdbarch_info info,
 
 	  if (arches != NULL)
 	    {
-	      DBG_PRINT("**RISC-V** riscv_gdbarch_init: reuse existing gdbarch");
+	      if (riscv_debug_gdbarch > 1)
+		fprintf_unfiltered (gdb_stdlog, "RISCV: Reuse existing GDBarch\n");
 	      tdesc_data_cleanup (tdesc_data);
 	      return arches->gdbarch;
 	    }
@@ -3080,9 +3057,10 @@ riscv_gdbarch_init (struct gdbarch_info info,
 	  riscv_add_aliases(gdbarch, riscv_freg_aliases, ARRAY_SIZE (riscv_freg_aliases));
 	  riscv_add_aliases(gdbarch, riscv_csr_aliases, ARRAY_SIZE (riscv_csr_aliases));
 	}
-#ifdef RISCV_DBG
-      riscv_dump_regs(gdbarch);
-#endif
+/* #ifdef RISCV_DBG */
+      if (riscv_debug_gdbarch > 1)
+	riscv_dump_gdbarch_regs (gdbarch);
+/* #endif */
     }
 
   if (gdbarch == NULL)
@@ -3090,7 +3068,8 @@ riscv_gdbarch_init (struct gdbarch_info info,
       /* Try to use first one pre-declared arch */
       arches = gdbarch_list_lookup_by_info (arches, &info);
       if (arches != NULL) {
-	DBG_PRINT("**RISC-V** riscv_gdbarch_init: reuse pre-declared gdbarch");
+	if (riscv_debug_gdbarch > 1)
+	  fprintf_unfiltered (gdb_stdlog, "RISCV: Reuse pre-declared GDBarch\n");
 	gdbarch = arches->gdbarch;
       }
     }
@@ -3116,7 +3095,8 @@ riscv_gdbarch_init (struct gdbarch_info info,
 	    }
 	}
 
-      DBG_PRINT("**RISC-V** riscv_gdbarch_init: create dummy gdbarch xlen %d", xlen);
+      if (riscv_debug_gdbarch > 1)
+	fprintf_unfiltered (gdb_stdlog, "RISCV: Create dummy GDBarch xlen %d\n", xlen);
 
       tdep = new (struct gdbarch_tdep);
       tdep->isa_features.xlen = xlen;
